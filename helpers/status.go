@@ -22,8 +22,6 @@ func CheckStatus(status *structs.StatusPayload, minURL string) structs.Response 
 
 	fullURL := baseURL + "?" + params.Encode()
 
-	fmt.Println(fullURL)
-
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		log.Fatalf("Error creating request: %v", err)
@@ -50,4 +48,9 @@ func CheckStatus(status *structs.StatusPayload, minURL string) structs.Response 
 	}
 
 	return statusResponse
+}
+
+func IsFinalStatus(status string) bool {
+	fmt.Println(status)
+	return status == "APPROVED" || status == "DECLINED" || status == "ERROR"
 }

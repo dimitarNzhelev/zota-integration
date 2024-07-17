@@ -3,7 +3,6 @@ package Implementations
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"strconv"
 	"time"
 	"zota_integration/Interfaces"
@@ -15,8 +14,8 @@ type MerchantStruct struct {
 	endpointID        string
 	url               string
 	merchantId        string
-	ordersId          []string //not shure if this is the best way to store the ordersId or if it is necessary to store it
 	merchantSecretKey string
+	statusChecker     Interfaces.StatusChecker
 }
 
 func (m *MerchantStruct) GenerateDepositSignature(merchantOrderID, orderAmount, customerEmail string) string {
@@ -39,7 +38,24 @@ func (m *MerchantStruct) Deposit(deposit *structs.DepositPayload) structs.Respon
 	response := helpers.CreateDeposit(deposit, m.url)
 	orderID, ok := response.Data["orderID"].(string)
 	if ok {
-		m.ordersId = append(m.ordersId, orderID)
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				statusResponse := m.Status(&structs.StatusPayload{
+					OrderID:         orderID,
+					MerchantOrderID: deposit.MerchantOrderID,
+					MerchantID:      m.merchantId,
+				})
+				status, ok := statusResponse.Data["status"].(string)
+				if ok && m.statusChecker.IsFinalStatus(status) {
+					return statusResponse
+				}
+			case <-time.After(120 * time.Second):
+				return structs.Response{Data: map[string]interface{}{"error": "Timeout waiting for final status"}}
+			}
+		}
 	}
 	return response
 }
@@ -47,17 +63,12 @@ func (m *MerchantStruct) Deposit(deposit *structs.DepositPayload) structs.Respon
 func (m *MerchantStruct) Status(status *structs.StatusPayload) structs.Response {
 	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 	signature := m.GenerateStatusSignature(status.OrderID, status.MerchantOrderID, timestamp)
-	fmt.Println(signature)
 	status.Signature = signature
 	status.Timestamp = timestamp
 	return helpers.CheckStatus(status, m.url)
 }
 
-func (m *MerchantStruct) GetOrdersId() []string {
-	return m.ordersId
-}
-
-func NewMerchant(endpointID, url, merchantId, merchantSecretKey string) Interfaces.Merchant {
-	m := MerchantStruct{endpointID: endpointID, url: url, merchantId: merchantId, merchantSecretKey: merchantSecretKey, ordersId: []string{}}
+func NewMerchant(endpointID, url, merchantId, merchantSecretKey string, statusChecker Interfaces.StatusChecker) Interfaces.Merchant {
+	m := MerchantStruct{endpointID: endpointID, url: url, merchantId: merchantId, merchantSecretKey: merchantSecretKey, statusChecker: statusChecker}
 	return &m
 }

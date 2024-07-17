@@ -7,5 +7,4 @@ type Merchant interface {
 	GenerateStatusSignature(orderId string, merchantOrderId, timestamp string) string
 	Deposit(deposit *structs.DepositPayload) structs.Response
 	Status(status *structs.StatusPayload) structs.Response
-	GetOrdersId() []string
 }
