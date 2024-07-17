@@ -33,31 +33,44 @@ func (m *MerchantStruct) GenerateStatusSignature(orderId, merchantOrderId, times
 }
 
 func (m *MerchantStruct) Deposit(deposit *structs.DepositPayload) structs.Response {
-	signature := m.GenerateDepositSignature(deposit.MerchantOrderID, deposit.OrderAmount, deposit.CustomerEmail)
-	deposit.Signature = signature
-	response := helpers.CreateDeposit(deposit, m.url)
-	orderID, ok := response.Data["orderID"].(string)
-	if ok {
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				statusResponse := m.Status(&structs.StatusPayload{
-					OrderID:         orderID,
-					MerchantOrderID: deposit.MerchantOrderID,
-					MerchantID:      m.merchantId,
-				})
-				status, ok := statusResponse.Data["status"].(string)
-				if ok && m.statusChecker.IsFinalStatus(status) {
-					return statusResponse
-				}
-			case <-time.After(120 * time.Second):
-				return structs.Response{Data: map[string]interface{}{"error": "Timeout waiting for final status"}}
-			}
-		}
-	}
-	return response
+    signature := m.GenerateDepositSignature(deposit.MerchantOrderID, deposit.OrderAmount, deposit.CustomerEmail)
+    deposit.Signature = signature
+    response := helpers.CreateDeposit(deposit, m.url)
+    orderID, ok := response.Data["orderID"].(string)
+    if !ok {
+        return response;
+    }
+
+    statusResponse := m.Status(&structs.StatusPayload{
+        OrderID:         orderID,
+        MerchantOrderID: deposit.MerchantOrderID,
+        MerchantID:      m.merchantId,
+    })
+    status, ok := statusResponse.Data["status"].(string)
+    if ok && m.statusChecker.IsFinalStatus(status) {
+        return statusResponse
+    }
+
+    ticker := time.NewTicker(10 * time.Second)
+    defer ticker.Stop()
+    timeout := time.After(120 * time.Second)
+
+    for {
+        select {
+        case <-ticker.C:
+            statusResponse := m.Status(&structs.StatusPayload{
+                OrderID:         orderID,
+                MerchantOrderID: deposit.MerchantOrderID,
+                MerchantID:      m.merchantId,
+            })
+            status, ok := statusResponse.Data["status"].(string)
+            if ok && m.statusChecker.IsFinalStatus(status) {
+                return statusResponse
+            }
+        case <-timeout:
+            return structs.Response{Data: map[string]interface{}{"error": "Timeout waiting for final status"}}
+        }
+    }
 }
 
 func (m *MerchantStruct) Status(status *structs.StatusPayload) structs.Response {
