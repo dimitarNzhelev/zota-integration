@@ -1,88 +1,52 @@
 package main
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"log"
-	"net/http"
+	"os"
+	"zota_integration/Implementations"
+	"zota_integration/structs"
+
+	"github.com/joho/godotenv"
 )
 
+func main() {
 
-func generateSignature(endpointID, merchantOrderID, orderAmount, customerEmail, merchantSecretKey string) string {
-    data := endpointID + merchantOrderID + orderAmount + customerEmail + merchantSecretKey
+	godotenv.Load(".env")
 
-    hash := sha256.Sum256([]byte(data))
+	merchantId := os.Getenv("merchantId")
+	merchantSecretKey := os.Getenv("merchantSecretKey")
+	endpointID := os.Getenv("endpointID")
+	url := os.Getenv("url")
 
-    signature := hex.EncodeToString(hash[:])
+	merchant := Implementations.NewMerchant(endpointID, url, merchantId, merchantSecretKey)
 
-    return signature
-}
+	res := merchant.Deposit(&structs.DepositPayload{
+		MerchantOrderID:     "ABC123",
+		MerchantOrderDesc:   "123",
+		OrderAmount:         "123",
+		OrderCurrency:       "USD",
+		CustomerEmail:       "customer@email-address.com",
+		CustomerFirstName:   "John",
+		CustomerLastName:    "Doe",
+		CustomerAddress:     "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
+		CustomerCountryCode: "TH",
+		CustomerCity:        "Surat Thani",
+		CustomerZipCode:     "84280",
+		CustomerPhone:       "+66-77999110",
+		CustomerIP:          "103.106.8.104",
+		RedirectURL:         "https://www.example-merchant.com/payment-return/",
+		CallbackURL:         "https://www.example-merchant.com/payment-callback/",
+		CheckoutURL:         "{\"UserId\": \"e139b447\"}",
+		CustomParam:         "https://www.example-merchant.com/account/deposit/?uid=e139b447",
+	})
 
+	fmt.Println(res)
 
-func createHTTPReq(getPayload, getUrl func() string) {
-	req, err := http.NewRequest("POST", getUrl(), bytes.NewBuffer([]byte(getPayload())))
-    if err != nil {
-        log.Fatalf("Error creating request: %v", err)
-    }
+	res2 := merchant.Status(&structs.StatusPayload{
+		OrderID:         "32529544",
+		MerchantOrderID: "ABC123",
+		MerchantID:      merchantId,
+	})
 
-    req.Header.Set("Content-Type", "application/json")
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        log.Fatalf("Error making request: %v", err)
-    }
-    defer resp.Body.Close()
-
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        log.Fatalf("Error reading response body: %v", err)
-    }
-
-    // Print the response status and body
-    fmt.Printf("Response status: %s\n", resp.Status)
-    fmt.Printf("Response body: %s\n", body)
-}
-
-
-func main() {    
-
-    endpointID := "402334"
-	merchantOrderID := "testNeAAAAwId"
-	orderAmount := "99.99"
-	customerEmail := "dimitar.n.zhelev@gmail.com"
-	merchantSecretKey := "866adddb-7b91-4b1b-82a2-364479e17486"
-
-	signature := generateSignature(endpointID, merchantOrderID, orderAmount, customerEmail, merchantSecretKey)
-
-    url := "https://api.zotapay-stage.com/api/v1/deposit/request/402334/"
-
-	payload := fmt.Sprintf(`{
-        "merchantOrderID": "%s",
-        "merchantOrderDesc": "WWWWWWWWWWWWWWWWWWWWW",
-        "orderAmount": "%s",
-        "orderCurrency": "USD",
-        "customerEmail": "%s",
-        "customerFirstName": "Ivna",
-        "customerLastName": "Aswqq",
-        "customerAddress": "The Swan, Jungle St. 108",
-        "customerCountryCode": "US",
-        "customerCity": "Los Angeles",
-        "customerState": "CA",
-        "customerZipCode": "90015",
-        "customerPhone": "+1 420-100-1000",
-        "customerBankCode": "BBL",
-        "customerIP": "134.201.250.130",
-        "redirectUrl": "https://www.example-merchant.com/payment-return/",
-        "callbackUrl": "https://www.example-merchant.com/payment-callback/",
-        "customParam": "{\"UserId\": \"c8266d59\"}",
-        "checkoutUrl": "https://www.example-merchant.com/account/deposit/?uid=c8266d59",
-        "signature": "%s"
-    }`, merchantOrderID, orderAmount, customerEmail, signature)
-
-
-    
+	fmt.Println(res2)
 }
