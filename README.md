@@ -50,11 +50,11 @@ go run example.go
 
 This will initiate the deposit and status check flows based on the provided example.
 
-### Feedback Revision
+## Feedback Revision
 
 This section revises the feedback received, focusing on enhancing clarity and structure.
 
-#### Areas for Improvement
+### Areas for Improvement
 
 1. **Global Variables for Test State in Deposit & Status Check Files:**
 
