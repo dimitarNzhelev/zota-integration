@@ -49,6 +49,7 @@ func (m *MerchantStruct) Status(status structs.StatusPayload) (res OrderStatusRe
 
 	status.Signature = m.genrateSignature(status.MerchantID, status.MerchantOrderID, status.OrderID, status.Timestamp)
 
+	//is there a better way to do this?
 	params := url.Values{}
 	params.Add("merchantID", status.MerchantID)
 	params.Add("merchantOrderID", status.MerchantOrderID)

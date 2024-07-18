@@ -2,7 +2,8 @@ package structs
 
 import (
 	"fmt"
-	"reflect"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type StatusPayload struct {
@@ -14,14 +15,19 @@ type StatusPayload struct {
 }
 
 func (status *StatusPayload) Validate() error {
+	validate := validator.New()
+
+	err := validate.Struct(status)
+	if err != nil {
+		return fmt.Errorf("validation error: %v", err)
+	}
+
 	required := []string{"MerchantOrderID", "OrderID"}
-	for _, fieldName := range required {
-		r := reflect.ValueOf(status)
-		f := reflect.Indirect(r).FieldByName(fieldName)
-		value := f.String()
-		if value == "" {
-			return fmt.Errorf("%v is required", fieldName)
+	for _, field := range required {
+		if len(field) == 0 {
+			return fmt.Errorf("validation error: %s is required", field)
 		}
 	}
+
 	return nil
 }

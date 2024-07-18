@@ -59,5 +59,3 @@ func (m *MerchantStruct) Deposit(d structs.DepositPayload) (res Response, err er
 
 	return
 }
-
-
