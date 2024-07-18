@@ -46,17 +46,21 @@ func (m *MerchantStruct) Deposit(d structs.DepositPayload) (res Response, err er
 
 	d.Signature = m.genrateSignature(m.EndpointID, d.MerchantOrderID, d.OrderAmount, d.CustomerEmail)
 
+	// convert the struct to json
 	deposit, err := json.Marshal(d)
 	if err != nil {
 		return
 	}
 
+
+	// perform the request
 	_, body, err := m.PerformRequest(http.MethodPost, fmt.Sprintf("%v/api/v1/deposit/request/%v/", m.Url, m.EndpointID), deposit)
 
 	if err != nil {
 		return
 	}
 
+	// unmarshal the response
 	err = json.Unmarshal(body, &res)
 	if err != nil {
 		err = fmt.Errorf("json Unmarshal err:%v", err)

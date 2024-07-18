@@ -10,6 +10,7 @@ type MockReqMaker struct{}
 
 
 func TestDeposit_Success(t *testing.T) {
+	// Mock response
 	mockResponse := &Response{
 		Code:    "200",
 		Message: "",
@@ -37,6 +38,7 @@ func TestDeposit_Success(t *testing.T) {
 }
 
 func TestDeposit_ValidationError(t *testing.T) {
+	// This test should simulate a validation error
 	merchant := MerchantStruct{
 		Url:        "https://example.com",
 		EndpointID: "testEndpoint",

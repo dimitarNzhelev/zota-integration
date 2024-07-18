@@ -28,6 +28,7 @@ func (mock *OrderStatusResult) SetMockResponse() {
 	mockedOrderStatusResult = mock
 }
 
+// Status method (core method)
 func (m *MerchantStruct) Status(status structs.StatusPayload) (res OrderStatusResult, err error) {
 
 	err = m.validate()
@@ -53,7 +54,7 @@ func (m *MerchantStruct) Status(status structs.StatusPayload) (res OrderStatusRe
 	}
 
 
-	//is there a better way to do this?
+	// create the query params
 	params := url.Values{}
 	params.Add("merchantID", status.MerchantID)
 	params.Add("merchantOrderID", status.MerchantOrderID)

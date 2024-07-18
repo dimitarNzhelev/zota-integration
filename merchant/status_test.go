@@ -9,6 +9,7 @@ import (
 type MockReqMakerStatus struct{}
 
 func TestStatus_Success(t *testing.T) {
+    // Mock response
     mockResponse := &OrderStatusResult{
         Code:    "200",
         Message: "",

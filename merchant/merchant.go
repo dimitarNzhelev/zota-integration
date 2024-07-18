@@ -24,6 +24,7 @@ type HttpReqMaker interface {
 	makeHttpReq(client httpClient, method, url string, body []byte) (int, []byte, error)
 }
 
+
 type httpClient interface {
 	Do(req *http.Request) (ret *http.Response, err error)
 }
@@ -50,12 +51,14 @@ func (m *MerchantStruct) genrateSignature(args ...string) (signature string) {
 	return
 }
 
+// initHttpClient initializes the http client
 func (m *MerchantStruct) initHttpClient() {
 	if m.HttpClient == nil {
 		m.HttpClient = &http.Client{}
 	}
 }
 
+// makeHttpReq makes an http request
 func (r RealReqMaker) makeHttpReq(client httpClient, method, url string, body []byte) (int, []byte, error) {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
@@ -76,13 +79,16 @@ func (r RealReqMaker) makeHttpReq(client httpClient, method, url string, body []
 
 	return resp.StatusCode, responseBody, nil
 }
+
+// PerformRequest makes a request to the merchant server
 func (m *MerchantStruct) PerformRequest(method string, url string, data []byte) (int, []byte, error) {
 	m.initHttpClient()
 
 	return m.ReqMaker.makeHttpReq(m.HttpClient, method, url, data)
 }
 
-// not really sure if i need it?
+
+// constructor
 func NewMerchantStruct(endpointID, url, merchantID, merchantSecretKey string) *MerchantStruct {
 	return &MerchantStruct{
 		EndpointID:        endpointID,
