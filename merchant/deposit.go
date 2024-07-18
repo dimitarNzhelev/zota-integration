@@ -1,4 +1,4 @@
-package main
+package merchant
 
 import (
 	"encoding/json"
@@ -11,6 +11,11 @@ type Response struct {
 	Code    string
 	Message string
 	Data    map[string]interface{} `json:"data"`
+}
+
+//String Method
+func (r Response) String() string {
+	return fmt.Sprintf("Code: %v, Message: %v, Data: %v", r.Code, r.Message, r.Data)
 }
 
 var mockedDepositResult *Response
@@ -39,14 +44,15 @@ func (m *MerchantStruct) Deposit(d structs.DepositPayload) (res Response, err er
 		return
 	}
 
-	d.Signature = m.genrateSignature(m.endpointID, d.MerchantOrderID, d.OrderAmount, d.CustomerEmail)
+	d.Signature = m.genrateSignature(m.EndpointID, d.MerchantOrderID, d.OrderAmount, d.CustomerEmail)
 
 	deposit, err := json.Marshal(d)
 	if err != nil {
 		return
 	}
 
-	_, body, err := m.makeHttpReq(http.MethodPost, fmt.Sprintf("%v/api/v1/deposit/request/%v/", m.url, m.endpointID), deposit)
+	_, body, err := m.PerformRequest(http.MethodPost, fmt.Sprintf("%v/api/v1/deposit/request/%v/", m.Url, m.EndpointID), deposit)
+
 	if err != nil {
 		return
 	}

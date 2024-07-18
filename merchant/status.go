@@ -1,4 +1,4 @@
-package main
+package merchant
 
 import (
 	"encoding/json"
@@ -16,6 +16,11 @@ type OrderStatusResult struct {
 	Message string                 `json:"message"`
 }
 
+//String Method
+func (r OrderStatusResult) String() string {
+	return fmt.Sprintf("Code: %v, Message: %v, Data: %v", r.Code, r.Message, r.Data)
+}
+
 var mockedOrderStatusResult *OrderStatusResult
 
 // this is for testing
@@ -25,20 +30,20 @@ func (mock *OrderStatusResult) SetMockResponse() {
 
 func (m *MerchantStruct) Status(status structs.StatusPayload) (res OrderStatusResult, err error) {
 
-	err = status.Validate()
-	if err != nil {
-		return
-	}
-
 	err = m.validate()
 	if err != nil {
 		return
 	}
 
-	status.MerchantID = m.merchantId
-
+	status.MerchantID = m.MerchantID
 	//generate timestamp in unix format
 	status.Timestamp = strconv.FormatInt(time.Now().Unix(), 10)
+	status.Signature = m.genrateSignature(status.MerchantID, status.MerchantOrderID, status.OrderID, status.Timestamp)
+
+	err = status.Validate()
+	if err != nil {
+		return
+	}
 
 	//only for testing
 	if mockedOrderStatusResult != nil {
@@ -47,7 +52,6 @@ func (m *MerchantStruct) Status(status structs.StatusPayload) (res OrderStatusRe
 		return
 	}
 
-	status.Signature = m.genrateSignature(status.MerchantID, status.MerchantOrderID, status.OrderID, status.Timestamp)
 
 	//is there a better way to do this?
 	params := url.Values{}
@@ -57,7 +61,7 @@ func (m *MerchantStruct) Status(status structs.StatusPayload) (res OrderStatusRe
 	params.Add("timestamp", status.Timestamp)
 	params.Add("signature", status.Signature)
 
-	_, body, err := m.makeHttpReq(http.MethodGet, fmt.Sprintf("%v/api/v1/query/order-status/?%v", m.url, params.Encode()), []byte(""))
+	_, body, err := m.PerformRequest(http.MethodGet, fmt.Sprintf("%v/api/v1/query/order-status/?%v", m.Url, params.Encode()), []byte(""))
 	if err != nil {
 		return
 	}
