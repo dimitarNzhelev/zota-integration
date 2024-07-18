@@ -22,12 +22,5 @@ func (status *StatusPayload) Validate() error {
 		return fmt.Errorf("validation error: %v", err)
 	}
 
-	required := []string{"MerchantOrderID", "OrderID"}
-	for _, field := range required {
-		if len(field) == 0 {
-			return fmt.Errorf("validation error: %s is required", field)
-		}
-	}
-
 	return nil
 }
